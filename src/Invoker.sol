@@ -19,7 +19,7 @@ contract Invoker is Auth {
                 calls,
                 batch.calls[i].to,
                 batch.calls[i].value,
-                bytes32(batch.calls[i].data.length),
+                batch.calls[i].data.length,
                 batch.calls[i].data
             );
         }
