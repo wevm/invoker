@@ -3,6 +3,10 @@ pragma solidity ^0.8.20;
 
 import {Auth} from "./Auth.sol";
 
+/// @title Generalized EIP-3074 invoker with batch transaction support.
+/// @author jxom
+/// @notice Use this contract to execute a batch of calls on behalf of an authority.
+/// @custom:experimental This is an experimental contract.
 contract Invoker is Auth {
     struct Batch {
         address from;
@@ -10,6 +14,11 @@ contract Invoker is Auth {
         Call[] calls;
     }
 
+    /// @notice Executes a batch of calls on behalf of the authority, provided a signature that
+    ///         was signed by the authority.
+    ///
+    /// @param batch The batch of calls to execute.
+    /// @param signature The signature of the auth message signed by the authority.
     function execute(Batch calldata batch, Signature calldata signature) external payable {
         auth(batch.from, getCommit(batch), signature);
 
@@ -27,10 +36,20 @@ contract Invoker is Auth {
         executeCalls(calls);
     }
 
+    /// @notice Computes the commit of a batch.
+    ///
+    /// @param batch The batch of calls.
+    ///
+    /// @return commit The commit of the batch.
     function getCommit(Batch calldata batch) public pure returns (bytes32 commit) {
         return keccak256(abi.encode(batch));
     }
 
+    /// @notice Computes the hash of the auth message of a batch.
+    ///
+    /// @param batch The batch of calls.
+    ///
+    /// @return hash The hash of the auth message.
     function getAuthMessageHash(Batch calldata batch) external view returns (bytes32) {
         return getAuthMessageHash(batch.nonce, getCommit(batch));
     }
