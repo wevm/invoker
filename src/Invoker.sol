@@ -10,7 +10,6 @@ import {Auth} from "./Auth.sol";
 contract Invoker is Auth {
     struct Batch {
         address from;
-        uint256 nonce;
         Call[] calls;
     }
 
@@ -48,10 +47,11 @@ contract Invoker is Auth {
     /// @notice Computes the hash of the auth message of a batch.
     ///
     /// @param batch The batch of calls.
+    /// @param nonce The nonce of the authority.
     ///
     /// @return hash The hash of the auth message.
-    function getAuthMessageHash(Batch calldata batch) external view returns (bytes32) {
-        return getAuthMessageHash(batch.nonce, getCommit(batch));
+    function getAuthMessageHash(Batch calldata batch, uint256 nonce) external view returns (bytes32) {
+        return getAuthMessageHash(getCommit(batch), nonce);
     }
 
     // Adapted from https://github.com/safe-global/safe-contracts/blob/main/contracts/libraries/MultiSendCallOnly.sol

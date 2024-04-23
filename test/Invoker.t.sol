@@ -51,9 +51,9 @@ contract InvokerTest is Test {
         calls[2] = Auth.Call({to: address(example), value: 0, data: abi.encodeWithSelector(Example.increment.selector)});
 
         Invoker.Batch memory batch =
-            Invoker.Batch({from: sender.addr, nonce: vm.getNonce(address(sender.addr)), calls: calls});
+            Invoker.Batch({from: sender.addr, calls: calls});
 
-        bytes32 hash = invoker.getAuthMessageHash(batch);
+        bytes32 hash = invoker.getAuthMessageHash(batch, vm.getNonce(address(sender.addr)));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(sender.privateKey, hash);
         invoker.execute(batch, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
 
@@ -68,9 +68,9 @@ contract InvokerTest is Test {
         calls[0] = Auth.Call({to: recipient.addr, value: 0.5 ether, data: "0x"});
         calls[1] = Auth.Call({to: recipient.addr, value: 0.5 ether, data: "0x"});
 
-        Invoker.Batch memory batch = Invoker.Batch({from: sender.addr, nonce: 0, calls: calls});
+        Invoker.Batch memory batch = Invoker.Batch({from: sender.addr, calls: calls});
 
-        bytes32 hash = invoker.getAuthMessageHash(batch);
+        bytes32 hash = invoker.getAuthMessageHash(batch, vm.getNonce(address(sender.addr)));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(sender.privateKey, hash);
 
         invoker.execute(batch, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
@@ -91,9 +91,9 @@ contract InvokerTest is Test {
             Auth.Call({to: address(example), value: 3 ether, data: abi.encodeWithSelector(Example.increment.selector)});
 
         Invoker.Batch memory batch =
-            Invoker.Batch({from: sender.addr, nonce: vm.getNonce(address(sender.addr)), calls: calls});
+            Invoker.Batch({from: sender.addr, calls: calls});
 
-        bytes32 hash = invoker.getAuthMessageHash(batch);
+        bytes32 hash = invoker.getAuthMessageHash(batch, vm.getNonce(address(sender.addr)));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(sender.privateKey, hash);
         invoker.execute(batch, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
 
@@ -111,9 +111,9 @@ contract InvokerTest is Test {
         });
 
         Invoker.Batch memory batch =
-            Invoker.Batch({from: sender.addr, nonce: vm.getNonce(address(sender.addr)), calls: calls});
+            Invoker.Batch({from: sender.addr, calls: calls});
 
-        bytes32 hash = invoker.getAuthMessageHash(batch);
+        bytes32 hash = invoker.getAuthMessageHash(batch, vm.getNonce(address(sender.addr)));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(sender.privateKey, hash);
 
         vm.expectRevert(abi.encodeWithSelector(Example.UnexpectedSender.selector, address(0), address(sender.addr)));

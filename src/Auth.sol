@@ -29,7 +29,7 @@ contract Auth {
     /// @param commit The commit.
     ///
     /// @return hash Keccak256 hash of the auth message.
-    function getAuthMessageHash(uint256 nonce, bytes32 commit) public view returns (bytes32) {
+    function getAuthMessageHash(bytes32 commit, uint256 nonce) public view returns (bytes32) {
         bytes32 chainId = bytes32(block.chainid);
         bytes32 invokerAddress = bytes32(uint256(uint160(address(this))));
         return keccak256(abi.encodePacked(MAGIC, chainId, nonce, invokerAddress, commit));

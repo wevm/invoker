@@ -20,7 +20,7 @@ contract AuthTest is Test {
     function test_auth(bytes32 commit) external {
         uint64 nonce = vm.getNonce(address(authority.addr));
 
-        bytes32 hash = target.getAuthMessageHash(nonce, commit);
+        bytes32 hash = target.getAuthMessageHash(commit, nonce);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(authority.privateKey, hash);
 
         bool success = target.auth(authority.addr, commit, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
@@ -30,7 +30,7 @@ contract AuthTest is Test {
     function test_auth_revert_invalidCommit(bytes32 commit) external {
         uint64 nonce = vm.getNonce(address(authority.addr));
 
-        bytes32 hash = target.getAuthMessageHash(nonce, commit);
+        bytes32 hash = target.getAuthMessageHash(commit, nonce);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(authority.privateKey, hash);
 
         bytes32 invalidCommit = keccak256("lol");
@@ -42,7 +42,7 @@ contract AuthTest is Test {
     function test_auth_revert_invalidAuthority(bytes32 commit) external {
         uint64 nonce = vm.getNonce(address(authority.addr));
 
-        bytes32 hash = target.getAuthMessageHash(nonce, commit);
+        bytes32 hash = target.getAuthMessageHash(commit, nonce);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(authority.privateKey, hash);
 
         address invalidAuthority = address(0);
