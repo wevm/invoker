@@ -31,8 +31,7 @@ contract InvokerTest is Test {
     VmSafe.Wallet public sender;
     VmSafe.Wallet public recipient;
 
-    uint256 nonce = 0;
-    uint256 value = 0;
+    uint8 authcall = 2;
 
     function setUp() public {
         invoker = new Invoker();
@@ -45,17 +44,35 @@ contract InvokerTest is Test {
     }
 
     function test_execute_data() external {
-        Auth.Call[] memory calls = new Auth.Call[](3);
-        calls[0] = Auth.Call({to: address(example), value: 0, data: abi.encodeWithSelector(Example.increment.selector)});
-        calls[1] = Auth.Call({to: address(example), value: 0, data: abi.encodeWithSelector(Example.increment.selector)});
-        calls[2] = Auth.Call({to: address(example), value: 0, data: abi.encodeWithSelector(Example.increment.selector)});
+        bytes memory data = abi.encodeWithSelector(Example.increment.selector);
+        bytes memory calls;
+        calls = abi.encodePacked(
+            authcall,
+            address(example),
+            uint256(0),
+            data.length,
+            data
+        );
+        calls = abi.encodePacked(
+            calls,
+            authcall,
+            address(example),
+            uint256(0),
+            data.length,
+            data
+        );
+        calls = abi.encodePacked(
+            calls,
+            authcall,
+            address(example),
+            uint256(0),
+            data.length,
+            data
+        );
 
-        Invoker.Batch memory batch =
-            Invoker.Batch({from: sender.addr, calls: calls});
-
-        bytes32 hash = invoker.getAuthMessageHash(batch, vm.getNonce(address(sender.addr)));
+        bytes32 hash = invoker.getAuthMessageHash(calls, sender.addr, vm.getNonce(address(sender.addr)));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(sender.privateKey, hash);
-        invoker.execute(batch, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
+        invoker.execute(calls, sender.addr, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
 
         assertEq(example.counter(sender.addr), 3);
         assertEq(example.values(sender.addr), 0);
@@ -64,16 +81,25 @@ contract InvokerTest is Test {
     function test_execute_value() external {
         vm.deal(sender.addr, 1 ether);
 
-        Auth.Call[] memory calls = new Auth.Call[](2);
-        calls[0] = Auth.Call({to: recipient.addr, value: 0.5 ether, data: "0x"});
-        calls[1] = Auth.Call({to: recipient.addr, value: 0.5 ether, data: "0x"});
+        bytes memory calls;
+        calls = abi.encodePacked(
+            authcall,
+            recipient.addr,
+            uint256(0.5 ether),
+            uint256(0)
+        );
+        calls = abi.encodePacked(
+            calls,
+            authcall,
+            recipient.addr,
+            uint256(0.5 ether),
+            uint256(0)
+        );
 
-        Invoker.Batch memory batch = Invoker.Batch({from: sender.addr, calls: calls});
-
-        bytes32 hash = invoker.getAuthMessageHash(batch, vm.getNonce(address(sender.addr)));
+        bytes32 hash = invoker.getAuthMessageHash(calls, sender.addr, vm.getNonce(address(sender.addr)));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(sender.privateKey, hash);
 
-        invoker.execute(batch, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
+        invoker.execute(calls, sender.addr, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
 
         assertEq(address(sender.addr).balance, 0 ether);
         assertEq(address(recipient.addr).balance, 1 ether);
@@ -82,43 +108,211 @@ contract InvokerTest is Test {
     function test_execute_dataAndValue() external {
         vm.deal(sender.addr, 6 ether);
 
-        Auth.Call[] memory calls = new Auth.Call[](3);
-        calls[0] =
-            Auth.Call({to: address(example), value: 1 ether, data: abi.encodeWithSelector(Example.increment.selector)});
-        calls[1] =
-            Auth.Call({to: address(example), value: 2 ether, data: abi.encodeWithSelector(Example.increment.selector)});
-        calls[2] =
-            Auth.Call({to: address(example), value: 3 ether, data: abi.encodeWithSelector(Example.increment.selector)});
+        bytes memory data = abi.encodeWithSelector(Example.increment.selector);
+        bytes memory calls;
+        calls = abi.encodePacked(
+            authcall,
+            address(example),
+            uint256(1 ether),
+            data.length,
+            data
+        );
+        calls = abi.encodePacked(
+            calls,
+            authcall,
+            address(example),
+            uint256(2 ether),
+            data.length,
+            data
+        );
+        calls = abi.encodePacked(
+            calls,
+            authcall,
+            address(example),
+            uint256(3 ether),
+            data.length,
+            data
+        );
 
-        Invoker.Batch memory batch =
-            Invoker.Batch({from: sender.addr, calls: calls});
-
-        bytes32 hash = invoker.getAuthMessageHash(batch, vm.getNonce(address(sender.addr)));
+        bytes32 hash = invoker.getAuthMessageHash(calls, sender.addr, vm.getNonce(address(sender.addr)));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(sender.privateKey, hash);
-        invoker.execute(batch, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
+        invoker.execute(calls, sender.addr, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
 
         assertEq(example.counter(sender.addr), 3);
         assertEq(example.values(sender.addr), 6 ether);
     }
 
     function test_execute_revert_invalidSender() external {
-        Auth.Call[] memory calls = new Auth.Call[](3);
-        calls[0] = Auth.Call({to: address(example), value: 0, data: abi.encodeWithSelector(Example.increment.selector)});
-        calls[1] = Auth.Call({
-            to: address(example),
-            value: 0,
-            data: abi.encodeWithSelector(Example.expectSender.selector, address(0))
-        });
+        bytes memory data_1 = abi.encodeWithSelector(Example.increment.selector);
+        bytes memory data_2 = abi.encodeWithSelector(Example.expectSender.selector, address(0));
 
-        Invoker.Batch memory batch =
-            Invoker.Batch({from: sender.addr, calls: calls});
+        bytes memory calls;
+        calls = abi.encodePacked(
+            authcall,
+            address(example),
+            uint256(0),
+            data_1.length,
+            data_1
+        );
+        calls = abi.encodePacked(
+            calls,
+            authcall,
+            address(example),
+            uint256(0),
+            data_2.length,
+            data_2
+        );
 
-        bytes32 hash = invoker.getAuthMessageHash(batch, vm.getNonce(address(sender.addr)));
+        bytes32 hash = invoker.getAuthMessageHash(calls, sender.addr, vm.getNonce(address(sender.addr)));
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(sender.privateKey, hash);
 
         vm.expectRevert(abi.encodeWithSelector(Example.UnexpectedSender.selector, address(0), address(sender.addr)));
-        invoker.execute(batch, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
+        invoker.execute(calls, sender.addr, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
 
         assertEq(example.counter(sender.addr), 0);
+    }
+
+    function test_execute_revert_invalidAuthority() external {
+        vm.deal(sender.addr, 1 ether);
+        vm.deal(recipient.addr, 1 ether);
+
+        bytes memory calls;
+        calls = abi.encodePacked(
+            authcall,
+            recipient.addr,
+            uint256(0.5 ether),
+            uint256(0)
+        );
+        calls = abi.encodePacked(
+            calls,
+            authcall,
+            recipient.addr,
+            uint256(0.5 ether),
+            uint256(0)
+        );
+
+        bytes32 hash = invoker.getAuthMessageHash(calls, sender.addr, vm.getNonce(address(sender.addr)));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(sender.privateKey, hash);
+
+        vm.expectRevert(Auth.InvalidAuthArguments.selector);
+        invoker.execute(calls, recipient.addr, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
+
+        assertEq(address(sender.addr).balance, 1 ether);
+        assertEq(address(recipient.addr).balance, 1 ether);
+    }
+
+    function test_execute_revert_invalidSignature() external {
+        vm.deal(sender.addr, 1 ether);
+        vm.deal(recipient.addr, 1 ether);
+
+        bytes memory calls;
+        calls = abi.encodePacked(
+            authcall,
+            recipient.addr,
+            uint256(0.5 ether),
+            uint256(0)
+        );
+        calls = abi.encodePacked(
+            calls,
+            authcall,
+            recipient.addr,
+            uint256(0.5 ether),
+            uint256(0)
+        );
+
+
+        VmSafe.Wallet memory badGuy = vm.createWallet("badGuy");
+        bytes memory calls_fake;
+        calls_fake = abi.encodePacked(
+            authcall,
+            badGuy.addr,
+            uint256(0.5 ether),
+            uint256(0)
+        );
+        calls_fake = abi.encodePacked(
+            calls_fake,
+            authcall,
+            badGuy.addr,
+            uint256(0.5 ether),
+            uint256(0)
+        );
+
+        bytes32 hash = invoker.getAuthMessageHash(calls, sender.addr, vm.getNonce(address(sender.addr)));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(sender.privateKey, hash);
+
+        vm.expectRevert(Auth.InvalidAuthArguments.selector);
+        invoker.execute(calls_fake, sender.addr, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
+
+        assertEq(address(sender.addr).balance, 1 ether);
+        assertEq(address(recipient.addr).balance, 1 ether);
+    }
+
+    function test_execute_revert_revoke() external {
+        vm.deal(sender.addr, 1 ether);
+
+        bytes memory calls;
+        calls = abi.encodePacked(
+            authcall,
+            recipient.addr,
+            uint256(0.5 ether),
+            uint256(0)
+        );
+        calls = abi.encodePacked(
+            calls,
+            authcall,
+            recipient.addr,
+            uint256(0.5 ether),
+            uint256(0)
+        );
+
+        bytes32 hash = invoker.getAuthMessageHash(calls, sender.addr, vm.getNonce(address(sender.addr)));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(sender.privateKey, hash);
+
+        invoker.execute(calls, sender.addr, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
+
+        assertEq(address(sender.addr).balance, 0 ether);
+        assertEq(address(recipient.addr).balance, 1 ether);
+
+        // revoke by setting nonce
+        vm.setNonce(address(sender.addr), vm.getNonce(address(sender.addr)) + 1);
+
+        vm.expectRevert(Auth.InvalidAuthArguments.selector);
+        invoker.execute(calls, sender.addr, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
+
+        assertEq(address(sender.addr).balance, 0 ether);
+        assertEq(address(recipient.addr).balance, 1 ether);
+    }
+
+    function test_execute_revert_invalidNonce() external {
+        vm.deal(sender.addr, 1 ether);
+
+        bytes memory calls;
+        calls = abi.encodePacked(
+            authcall,
+            recipient.addr,
+            uint256(0.5 ether),
+            uint256(0)
+        );
+        calls = abi.encodePacked(
+            calls,
+            authcall,
+            recipient.addr,
+            uint256(0.5 ether),
+            uint256(0)
+        );
+
+        bytes32 hash = invoker.getAuthMessageHash(calls, sender.addr, vm.getNonce(address(sender.addr)));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(sender.privateKey, hash);
+
+        invoker.execute(calls, sender.addr, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
+
+        assertEq(address(sender.addr).balance, 0 ether);
+        assertEq(address(recipient.addr).balance, 1 ether);
+
+        vm.expectRevert(Auth.InvalidAuthArguments.selector);
+        invoker.execute(calls, sender.addr, Auth.Signature({yParity: vToYParity(v), r: r, s: s}));
+
+        assertEq(address(sender.addr).balance, 0 ether);
+        assertEq(address(recipient.addr).balance, 1 ether);
     }
 }
