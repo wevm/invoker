@@ -8,14 +8,18 @@ import {Auth} from "./Auth.sol";
 /// @notice Shared functionality and interfaces for Invoker contracts.
 /// @custom:experimental This is an experimental contract.
 abstract contract AbstractInvoker is Auth {
-    /// @notice Computes the commit of execution data.
     /// @dev This function must be implemented by the invoker implementation.
     function getCommit(bytes calldata data, address authority) virtual public view returns (bytes32 commit);
 
-    /// @notice Executes data on behalf of the authority.
     /// @dev This function must be implemented by the invoker implementation.
     function exec(bytes calldata data, address authority, Signature calldata signature) virtual internal;
 
+    /// @notice Executes data on behalf of the authority, provided a signature that
+    ///         was signed by the authority.
+    ///
+    /// @param data Execution data.
+    /// @param authority The authority to execute the calls on behalf of.
+    /// @param signature The signature of the auth message signed by the authority.
     function execute(bytes calldata data, address authority, Signature calldata signature) external payable {
         auth(authority, getCommit(data, authority), signature);
         exec(data, authority, signature);
