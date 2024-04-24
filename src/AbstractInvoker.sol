@@ -12,7 +12,7 @@ abstract contract AbstractInvoker is Auth {
     function getCommit(bytes calldata data, address authority) virtual public view returns (bytes32 commit);
 
     /// @dev This function must be implemented by the invoker implementation.
-    function exec(bytes calldata data, address authority, Signature calldata signature) virtual internal;
+    function exec(bytes calldata data, address authority) virtual internal;
 
     /// @notice Executes data on behalf of the authority, provided a signature that
     ///         was signed by the authority.
@@ -22,7 +22,7 @@ abstract contract AbstractInvoker is Auth {
     /// @param signature The signature of the auth message signed by the authority.
     function execute(bytes calldata data, address authority, Signature calldata signature) external payable {
         auth(authority, getCommit(data, authority), signature);
-        exec(data, authority, signature);
+        exec(data, authority);
     }
 
     /// @notice Computes the hash of the auth message.

@@ -15,7 +15,7 @@ contract Invoker is AbstractInvoker, BatchExecutor {
 
     /// @notice Computes the commit of a batch.
     ///
-    /// @param calls Calls to execute in format of packed bytes of:
+    /// @param data Calls to execute in format of packed bytes of:
     ///              `operation` (uint8): operation type – must equal uint8(2) for AUTHCALL.
     ///              `to` (address): address of the recipient.
     ///              `value` (uint256): value in wei to send.
@@ -24,23 +24,22 @@ contract Invoker is AbstractInvoker, BatchExecutor {
     /// @param authority The authority to execute the calls on behalf of.
     ///
     /// @return commit The commit of the batch.
-    function getCommit(bytes calldata calls, address authority) override public view returns (bytes32 commit) {
-        return keccak256(abi.encodePacked(calls, nonces[authority]));
+    function getCommit(bytes calldata data, address authority) override public view returns (bytes32 commit) {
+        return keccak256(abi.encodePacked(data, nonces[authority]));
     }
 
     /// @notice Executes calls on behalf of the authority, provided a signature that
     ///         was signed by the authority.
     ///
-    /// @param calls Calls to execute in format of packed bytes of:
+    /// @param data Calls to execute in format of packed bytes of:
     ///              `operation` (uint8): operation type – must equal uint8(2) for AUTHCALL.
     ///              `to` (address): address of the recipient.
     ///              `value` (uint256): value in wei to send.
     ///              `dataLength` (uint256): length of the data.
     ///              `data` (bytes): calldata to send.
     /// @param authority The authority to execute the calls on behalf of.
-    /// @param signature The signature of the auth message signed by the authority.
-    function exec(bytes calldata calls, address authority, Signature calldata signature) override internal {
+    function exec(bytes calldata data, address authority) override internal {
         nonces[authority]++;
-        executeCalls(calls);
+        executeCalls(data);
     }
 }
