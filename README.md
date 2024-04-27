@@ -1,9 +1,9 @@
+> [!WARNING] 
+> THIS REPOSITORY HAS BEEN UPSTREAMED TO [`3074-invokers`](https://github.com/anton-rs/3074-invokers).
+
 # EIP-3074 Invoker
 
 Generalized EIP-3074 Invoker with batch transaction support. Inspired by @clabby's work on [`eip-3074-foundry`](https://github.com/clabby/eip-3074-foundry).
-
-> [!WARNING] 
-> WIP. Very experimental, not audited, use with caution.
 
 ## Patches
 
